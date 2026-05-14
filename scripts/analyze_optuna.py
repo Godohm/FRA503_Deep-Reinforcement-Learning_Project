@@ -244,12 +244,12 @@ def _render_algo_section(tag: str, study: optuna.Study,
     label = _label_of_tag(tag)
     trials = _completed_trials(study)
     if not trials:
-        return f"\n## {label}\n\n(no completed trials)\n"
+        return f"\n### {label}\n\n(no completed trials)\n"
 
     best = study.best_trial
     best_attrs = best.user_attrs
 
-    lines: list[str] = [f"\n## {label}\n"]
+    lines: list[str] = [f"\n### {label}\n"]
     lines.append(f"- Trials completed: **{len(trials)} / {len(study.trials)}**")
     lines.append(f"- Best Sharpe: **{best.value:.3f}** (trial #{best.number})")
     lines.append(f"- Best total_return: {best_attrs.get('total_return', float('nan')):.4f}")
@@ -313,7 +313,7 @@ def _render_variant_comparison(tag_studies: list[tuple[str, optuna.Study]]) -> s
     for algo, variants in by_algo.items():
         if len(variants) < 2:
             continue
-        lines = [f"\n## Ablation — {algo.upper()} variants\n"]
+        lines = [f"\n## 3a. Ablation — {algo.upper()} variants\n"]
         lines.append(
             "Each variant is a separate Optuna study over the *same search space* "
             "(see `scripts/optuna_search.py`) with one design knob held to a "
@@ -379,33 +379,87 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     pieces: list[str] = [
-        "# Bayesian HPO Report (Optuna TPE)\n",
-        "Per-algorithm short-horizon search using TPE sampler over the search "
-        "spaces declared in `scripts/optuna_search.py`. Each trial trains a "
-        "fresh agent at the proposed hyperparameters, evaluates on the test "
-        "split, and returns Sharpe as the maximisation objective.\n",
-        "**Reading the artefacts:**\n"
-        "- *Dose-response plot* — for each parameter, scatter of (parameter "
-        "value, observed Sharpe) over all completed trials. A quadratic trend "
-        "line is overlaid when there are ≥4 distinct sampled values. "
-        "Categorical params are shown as boxplots per category.\n"
-        "- *fANOVA importance* — fraction of the variance in Sharpe attributable "
-        "to each parameter via the Hutter/Hoos fANOVA. Importance ≠ direction; "
-        "consult the dose-response plot for sign.\n"
-        "- *History plot* — Sharpe vs trial number, with the cumulative max "
-        "(best-so-far) overlaid.\n",
-        "**Caveats:**\n"
-        "- This is a *short-horizon* search (steps per trial < 50k typically). "
-        "Rankings reflect early-training behaviour, not asymptotic performance.\n"
-        "- Single seed per trial → seed-induced variance is folded into the "
-        "objective noise. Cross-seed validation is the M8 full run's job.\n",
+        "# Bayesian HPO Report — Optuna TPE (2025–2026 Dataset)\n",
+
+        "## 1. What is Optuna?\n",
+        "**Optuna** is an open-source automatic hyperparameter optimisation (HPO) "
+        "framework developed by Preferred Networks. Unlike grid search (exhaustive but "
+        "exponential) or random search (simple but wasteful), Optuna builds a "
+        "*probabilistic surrogate model* of the objective function and uses it to "
+        "decide which hyperparameter configurations to evaluate next. This makes it "
+        "far more sample-efficient: it finds good configurations in far fewer trials "
+        "than grid or random search would need.\n",
+
+        "### 1.1 How TPE Works\n",
+        "The sampler used here is **TPE (Tree-structured Parzen Estimator)**, "
+        "the default Optuna sampler and the same algorithm used in Hyperopt. "
+        "It works as follows:\n\n"
+        "1. **Startup phase** (first `n_startup_trials` trials, here 10): "
+        "sample configurations *uniformly at random* to warm up the model — no "
+        "prior knowledge yet.\n"
+        "2. **Model phase** (from trial 11 onwards): split all past trials into two "
+        "groups based on a quantile γ of the objective (Sharpe):\n"
+        "   - **l(x)** — the *good* distribution: density model fitted on the top "
+        "     γ fraction of configurations (high Sharpe).\n"
+        "   - **g(x)** — the *bad* distribution: density model fitted on the bottom "
+        "     1−γ fraction.\n"
+        "   TPE then proposes the next configuration by maximising the ratio "
+        "**l(x) / g(x)** — i.e. it favours regions that are likely under the "
+        "*good* distribution and unlikely under the *bad* one.\n"
+        "3. Each proposed configuration is then **evaluated** by training a fresh "
+        "agent for 50 000 environment steps and measuring Sharpe on the *validation* "
+        "split (Jan–Feb 2026). This Sharpe score is fed back to update l(x) and g(x).\n\n"
+        "The key advantage over random search is that TPE concentrates evaluations in "
+        "promising regions, converging to better configurations with the same budget.\n",
+
+        "### 1.2 Study Setup\n",
+        "| Setting | Value |\n"
+        "| --- | --- |\n"
+        "| Sampler | TPE (Optuna 4.8.0) |\n"
+        "| Trials per study | 50 |\n"
+        "| Steps per trial | 50 000 |\n"
+        "| Startup (random) trials | 10 |\n"
+        "| Objective metric | Sharpe ratio (annualised, on *validation* split) |\n"
+        "| Seed | 42 |\n"
+        "| Train data | Jan–Dec 2025 (257 sessions) |\n"
+        "| Eval (HPO selection) | Jan–Feb 2026 *validation* split (40 sessions) |\n"
+        "| Test (held out) | Mar–Apr 2026 — never touched during HPO |\n"
+        "| Studies | DDQN-linear, DDQN-exponential, A2C, PPO |\n\n"
+        "> **Why separate validation?** The old 2-way split used the test set to "
+        "select checkpoints during training, leaking information into HPO. The "
+        "3-way split fixes this: validation guides HPO, test is reserved for the "
+        "final unbiased comparison reported in the paper.\n",
+
+        "## 2. How to Read the Artefacts\n",
+        "**Dose-response plot** (`<algo>_dose_response.png`) — for each sampled "
+        "hyperparameter, a scatter of (parameter value, observed Sharpe) across all "
+        "completed trials. A quadratic trend line is overlaid when ≥4 distinct values "
+        "were sampled. Categorical parameters are shown as boxplots. The plot reveals "
+        "*which parameter values correlate with higher Sharpe* and in which "
+        "direction — useful for understanding the landscape the agent operates in.\n\n"
+        "**fANOVA importance** (`<algo>_importance.png`) — the Hutter/Hoos fANOVA "
+        "algorithm partitions variance in the Sharpe scores attributable to each "
+        "hyperparameter (and their interactions). A parameter with importance = 0.48 "
+        "explains ~48 % of the variation in Sharpe across all 50 trials. Note: "
+        "*importance ≠ direction* — a highly important parameter might be one where "
+        "the wrong value hurts badly. Consult the dose-response plot for sign.\n\n"
+        "**History plot** (`<algo>_history.png`) — Sharpe vs trial number with the "
+        "cumulative best-so-far overlaid. A rising best-so-far curve indicates TPE is "
+        "successfully focusing on good regions. A flat curve after trial 10 suggests "
+        "the search space is too wide or the objective is too noisy for TPE to learn "
+        "from 50 trials.\n",
+
+        "## 3. HPO Results\n",
+        "The sections below cover each algorithm. The **Ablation** section (if "
+        "present) compares variants of the same algorithm (e.g. linear vs exponential "
+        "ε-decay for DDQN) trained under identical conditions.\n",
     ]
 
     tag_studies: list[tuple[str, optuna.Study]] = []
     for tag in tags:
         study = _load_study(tag, storage_dir)
         if study is None:
-            pieces.append(f"\n## {_label_of_tag(tag)}\n\n(no study DB found at "
+            pieces.append(f"\n### {_label_of_tag(tag)}\n\n(no study DB found at "
                           f"{storage_dir}/{tag}_study.db)\n")
             continue
         tag_studies.append((tag, study))

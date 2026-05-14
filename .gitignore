@@ -58,16 +58,32 @@ results/
 !results/ppo/m8_full_ppo_seed*/*.yaml
 !results/ppo/m8_full_ppo_seed*/*.json
 !results/ppo/m8_full_ppo_seed*/*.csv
-# Allow Optuna HPO report + plots (but not .db files)
+# Allow Optuna HPO report + plots (but not .db files, .log files, or per-trial dirs)
 !results/optuna/
 !results/optuna/*.md
 !results/optuna/*.png
 !results/optuna/*.csv
+results/optuna/*.db
+results/optuna/*.log
 # Allow OAT HPO report
 !results/hpo/
 !results/hpo/*.md
 !results/hpo/*.csv
 !results/hpo/*.yaml
+
+# Exclude per-trial Optuna artifact dirs and smoke/OAT runs (regenerable)
+results/ddqn/optuna_*/
+results/ddqn/optuna_expdecay_*/
+results/ddqn/optuna_test_*/
+results/ddqn/*_smoke/
+results/ddqn/hpo_ddqn_*/
+results/a2c/optuna_*/
+results/a2c/*_smoke/
+results/a2c/hpo_a2c_*/
+results/ppo/optuna_*/
+results/ppo/*_smoke/
+results/ppo/hpo_ppo_*/
+results/baselines/
 
 # Keep the raw CSV under version control? It's 23MB — for an academic repo we keep it.
 # If you switch to git-lfs or external storage, add this line:

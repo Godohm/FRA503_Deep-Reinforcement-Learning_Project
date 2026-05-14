@@ -165,15 +165,19 @@ def _make_objective(algo: str, base_cfg: dict[str, Any], env_cfg: dict[str, Any]
         metrics = summary.get("best_metrics") or summary.get("final_metrics") or {}
         sharpe = float(metrics.get("sharpe_ratio", -1.0e6))
         # Stash extras for downstream analysis (not affecting Optuna direction).
-        trial.set_user_attr("total_return",        float(metrics.get("total_return", 0.0)))
-        trial.set_user_attr("max_drawdown_pct",    float(metrics.get("max_drawdown_pct", 0.0)))
-        trial.set_user_attr("n_trades",            int(metrics.get("n_trades", 0)))
-        trial.set_user_attr("win_rate",            float(metrics.get("win_rate", 0.0)))
-        trial.set_user_attr("exposure_time",       float(metrics.get("exposure_time", 0.0)))
-        trial.set_user_attr("total_transaction_cost",
-                            float(metrics.get("total_transaction_cost", 0.0)))
-        trial.set_user_attr("final_equity",        float(metrics.get("final_equity", 0.0)))
-        trial.set_user_attr("run_id", run_id)
+        # Guard against UpdateFinishedTrialError from concurrent DB writes.
+        try:
+            trial.set_user_attr("total_return",        float(metrics.get("total_return", 0.0)))
+            trial.set_user_attr("max_drawdown_pct",    float(metrics.get("max_drawdown_pct", 0.0)))
+            trial.set_user_attr("n_trades",            int(metrics.get("n_trades", 0)))
+            trial.set_user_attr("win_rate",            float(metrics.get("win_rate", 0.0)))
+            trial.set_user_attr("exposure_time",       float(metrics.get("exposure_time", 0.0)))
+            trial.set_user_attr("total_transaction_cost",
+                                float(metrics.get("total_transaction_cost", 0.0)))
+            trial.set_user_attr("final_equity",        float(metrics.get("final_equity", 0.0)))
+            trial.set_user_attr("run_id", run_id)
+        except Exception as e:
+            print(f"  [trial {trial.number}] WARNING: could not set user attrs: {e}")
         return sharpe
 
     return objective
@@ -208,7 +212,7 @@ def run_search(algo: str, n_trials: int, steps: int, env_cfg: dict[str, Any],
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     print(f"[{tag}] starting search: trials={n_trials} steps={steps} "
-          f"eval_every={eval_every} startup={n_startup_trials}")
+          f"eval_every={eval_every} startup={n_startup_trials}", flush=True)
     t0 = time.time()
     # Custom callback for progress lines (Optuna's default progress bar requires tqdm).
     def _cb(study_, trial_):
@@ -216,9 +220,14 @@ def run_search(algo: str, n_trials: int, steps: int, env_cfg: dict[str, Any],
         tr = attrs.get("total_return", float("nan"))
         ntr = attrs.get("n_trades", 0)
         print(f"  [{tag} t{trial_.number:03d}] "
-              f"Sharpe={trial_.value:.2f} total_return={tr:.4f} trades={ntr}")
+              f"Sharpe={trial_.value:.2f} total_return={tr:.4f} trades={ntr}", flush=True)
 
-    study.optimize(objective, n_trials=n_trials, callbacks=[_cb])
+    try:
+        study.optimize(objective, n_trials=n_trials, callbacks=[_cb])
+    except Exception as exc:
+        print(f"[{tag}] FATAL in study.optimize: {type(exc).__name__}: {exc}", flush=True)
+        traceback.print_exc()
+        raise
     elapsed = time.time() - t0
 
     # Persist a flat CSV of trials for quick downstream consumption.
@@ -274,7 +283,7 @@ def main() -> int:
 
     print(f"[start] algos={args.algos} trials={args.trials} steps={args.steps} "
           f"startup={args.startup_trials} seed={args.seed} "
-          f"suffix='{args.study_suffix}' ddqn_decay={args.ddqn_decay_type}")
+          f"suffix='{args.study_suffix}' ddqn_decay={args.ddqn_decay_type}", flush=True)
     t_total = time.time()
     for algo in args.algos:
         static: dict[str, dict[str, Any]] = {}

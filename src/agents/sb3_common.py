@@ -46,15 +46,19 @@ def prepare_envs_sb3(env_cfg: dict[str, Any]) -> PreppedSB3:
     initial_equity = float(env_cfg["portfolio"]["initial_equity"])
 
     train_path = processed_dir / "train.parquet"
+    # Use val.parquet for periodic eval during training when it exists (3-way split).
+    # Fall back to test.parquet for backward compatibility (2-way split).
+    val_path  = processed_dir / "val.parquet"
     test_path = processed_dir / "test.parquet"
-    for p in (train_path, test_path):
+    eval_path = val_path if val_path.is_file() else test_path
+    for p in (train_path, eval_path):
         if not p.is_file():
             raise FileNotFoundError(
                 f"Missing {p}. Run `python scripts/prepare_data.py` first."
             )
 
     train_df = _restore_session_day_dtype(pd.read_parquet(train_path))
-    test_df = _restore_session_day_dtype(pd.read_parquet(test_path))
+    test_df  = _restore_session_day_dtype(pd.read_parquet(eval_path))
 
     train_feats = compute_price_features(train_df, point_size=point_size)
     test_feats = compute_price_features(test_df, point_size=point_size)
