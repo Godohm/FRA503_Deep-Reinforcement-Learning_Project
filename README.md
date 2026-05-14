@@ -1,79 +1,147 @@
-# CFD Trading Agent Using Deep Reinforcement Learning for EURUSD Intraday Trading
+# FRA503 — Deep Reinforcement Learning for EURUSD Intraday Trading
 
-Academic / research project. **Simulation & backtesting only — no live trading.** The original course material used XAUUSD / gold; this implementation uses **EURUSD CFD** consistently.
+> **Simulation & backtesting only — no live trading.**
 
-## What this project does
+Academic research project for FRA503. Builds a Gymnasium-compatible intraday CFD trading environment on 1-minute EURUSD data and compares three DRL algorithms under identical conditions.
 
-Builds a Gymnasium-compatible intraday trading environment for EURUSD on 1-minute MT5 historical data, then trains and compares three DRL agents under identical conditions:
+---
 
-1. **Double DQN** (custom PyTorch)
-2. **A2C** (Stable-Baselines3)
-3. **PPO** (Stable-Baselines3)
+## Algorithms compared
 
-Performance is evaluated with profitability and risk-adjusted metrics (Sharpe, Sortino, max drawdown, win rate, etc.) and compared against long-only / short-only / flat baselines.
+| Algorithm | Implementation | Best Sharpe (Optuna 50-trial HPO) |
+|---|---|---|
+| **Double DQN** | Custom PyTorch | **+3.64** |
+| **PPO** | Stable-Baselines3 | +0.39 |
+| **A2C** | Stable-Baselines3 | +0.12 |
 
-## Status
+ε-decay ablation: **linear decay** outperforms exponential (Sharpe +3.64 vs +0.51) over 50-trial Bayesian search.
 
-| Milestone | State |
+---
+
+## Project structure
+
+```
+FRA503_DRL/
+├── configs/            # YAML hyperparameters (env, dqn, a2c, ppo, hpo)
+├── data/raw/           # eurusd_m1_2024.csv — 372,673 1-min bars (MT5 export)
+├── reports/            # implementation_plan, experimental_design, data_schema
+├── scripts/
+│   ├── prepare_data.py         # CSV → parquet splits + scaler
+│   ├── train_{dqn,a2c,ppo}.py  # single-algo training CLI
+│   ├── run_experiment_1.py     # multi-seed orchestrator
+│   ├── run_baselines.py        # long/short/flat baselines
+│   ├── evaluate_all.py         # aggregate comparison table
+│   ├── run_hpo.py              # OAT sensitivity sweep
+│   ├── optuna_search.py        # Bayesian HPO (Optuna TPE)
+│   └── analyze_optuna.py       # dose-response plots + fANOVA report
+├── src/
+│   ├── agents/         # double_dqn.py (custom DDQN), SB3 wrappers
+│   ├── data/           # load_mt5, preprocess, split
+│   ├── envs/           # EURUSDIntradayTradingEnv (Gymnasium)
+│   ├── evaluation/     # metrics, backtest, plots, baselines
+│   ├── features/       # indicators, state_builder, normalization
+│   └── utils/          # config, seeding, logging
+└── tests/              # pytest unit tests (env, reward, features, metrics, agents)
+```
+
+---
+
+## Environment design
+
+| Setting | Value |
 |---|---|
-| M0 — Planning docs | ✅ Done |
-| M1 — Scaffolding | pending sign-off |
-| M2 — Data pipeline | pending |
-| M3 — Features + tests | pending |
-| M4 — Trading env + tests | pending |
-| M5 — Baselines + metrics | pending |
-| M6 — Double DQN | pending |
-| M7 — A2C + PPO | pending |
-| M8 — Experiment 1 | pending |
-| M9 — Reports | pending |
-| M10 — (Optional) Exp 2 | deferred |
-
-See [TODO.md](TODO.md).
-
-## Documents
-
-- [reports/implementation_plan.md](reports/implementation_plan.md) — architecture, env, reward, training, testing strategy
-- [reports/experimental_design.md](reports/experimental_design.md) — experiments, metrics, reproducibility, limitations
-- [reports/data_schema.md](reports/data_schema.md) — raw / processed data shape, timezone handling, cost units
-- [configs/env.yaml](configs/env.yaml) — single source of truth for env / cost / session / split
-
-## Key decisions
-
-| Decision | Choice |
-|---|---|
-| Instrument | EURUSD CFD (5-digit) |
+| Instrument | EURUSD CFD (5-digit broker, point_size = 1e-5) |
 | Bar interval | 1 minute |
-| Session window | 09:00–00:00 UTC+7 (force-close before midnight UTC+7) |
-| State | 15-D (5 returns, spread, MACD, Stoch, RSI, ATR, TL, POS, PR, DR, HT) |
-| Action | Discrete target position ∈ {−1, 0, +1} |
-| Reward | `net_pnl / initial_equity` (dimensionless fractional return) |
-| Execution | `current_close` (force-close always `current_close`) |
-| Spread | broker `spread` column + configurable commission |
-| Train / test split | 11 months / 1 month (chronological, Dec 2024 = test) |
-| Double DQN | Custom PyTorch (SB3 doesn't ship DDQN) |
-| Logging | TensorBoard + CSV |
+| Session window | 09:00–00:00 UTC+7 (force-close at midnight) |
+| Train / test split | Jan–Nov 2024 (train) · Dec 2024 (test) |
+| State space | 15-D: 5 log-returns, spread, MACD, Stoch %K, RSI, ATR, time-left, position, unrealised PnL, daily PnL, holding-time |
+| Action space | Discrete(3): short(−1), flat(0), long(+1) |
+| Reward | `net_pnl / initial_equity` (dimensionless) |
+| Execution | Current-close (force-close always current-close) |
+| Transaction cost | Broker spread (points → price) + configurable commission |
+| Initial equity | $10,000 · 1 standard lot (100,000 EUR) |
 
-## Quick start (after M1+ is implemented)
+---
+
+## Quick start
 
 ```powershell
+# 1. Install dependencies
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
+# 2. Build dataset
 python scripts/prepare_data.py --config configs/env.yaml
+
+# 3. Run unit tests
 pytest tests/ -q
 
-python scripts/train_all.py --steps 5000 --seed 42      # smoke
-python scripts/run_experiment_1.py --seeds 42 123 2024   # full
+# 4. Smoke train (5k steps each)
+python scripts/train_dqn.py --smoke
+python scripts/train_a2c.py --smoke
+python scripts/train_ppo.py --smoke
+
+# 5. Full experiment (3 seeds × 3 algos)
+python scripts/run_experiment_1.py --seeds 42 123 2024 --steps 200000
+
+# 6. Baselines + comparison table
 python scripts/run_baselines.py
 python scripts/evaluate_all.py
 ```
 
+---
+
+## Hyperparameter optimisation
+
+```powershell
+# Bayesian HPO — 50 trials × 50k steps per algo (TPE sampler)
+python scripts/optuna_search.py --algos ddqn a2c ppo --trials 50 --steps 50000
+
+# ε-decay ablation for DDQN (exponential vs linear)
+python scripts/optuna_search.py --algos ddqn --trials 50 --steps 50000 --study-suffix _expdecay --ddqn-decay-type exponential
+
+# Generate dose-response plots + fANOVA report
+python scripts/analyze_optuna.py --tags ddqn a2c ppo ddqn_expdecay
+```
+
+**Key findings (fANOVA importance):**
+
+- **DDQN:** `target_update_freq` (48%) + `lr` (39%) dominate — lower target-sync lag and higher LR both help
+- **PPO:** `clip_range` (35%) + `learning_rate` (24%) most sensitive — tighter clip (≈0.09) with low LR preferred
+- **A2C:** `gae_lambda` (42%) + `n_steps` (36%) — high GAE lambda, short rollout window wins
+
+---
+
+## DDQN implementation notes
+
+- **Architecture:** MLP 15 → 128 → 128 → 3 (ReLU), online + target networks
+- **Target update:** hard sync every `target_update_freq` learner steps
+- **Double DQN target:** `y = r + γ · Q_target(s', argmax_a Q_online(s', a))`
+- **ε-decay:** linear (default) or exponential — configurable via `eps_decay_type`
+- **Best HPO config:** lr=4.5e-3, γ=0.956, eps_decay_steps=60k, target_update=1700, batch=64, min_buffer=7500 → Sharpe **+3.64**
+
+---
+
 ## Data
 
-- `data/raw/eurusd_m1_2024.csv` — 372,673 1-min bars (2024-01-02 → 2024-12-31, UTC), exported via `Test1` / `test.txt` (MT5 Python API).
-- See [reports/data_schema.md](reports/data_schema.md) for the full schema and timezone notes.
+`data/raw/eurusd_m1_2024.csv` — 372,673 rows of 1-min OHLCV bars (2024-01-02 → 2024-12-31) exported from MetaTrader 5 via the Python API (see `Test1` / `test.txt`). Timestamps are UTC; session masking converts to UTC+7 (Asia/Bangkok) for window filtering only.
 
-## License / intended use
+See [reports/data_schema.md](reports/data_schema.md) for full schema and cost-unit derivation.
 
-This is a course / research project. Do not use any of this code, model, or methodology for live trading without your own due diligence. The authors accept no liability for losses incurred from doing so.
+---
+
+## Documents
+
+| File | Content |
+|---|---|
+| [reports/implementation_plan.md](reports/implementation_plan.md) | Full architecture, env API, reward derivation, testing strategy |
+| [reports/experimental_design.md](reports/experimental_design.md) | Experiment setup, metrics, reproducibility, limitations |
+| [reports/data_schema.md](reports/data_schema.md) | Raw/processed data schema, timezone handling, cost units |
+| [configs/env.yaml](configs/env.yaml) | Single source of truth for env / cost / session / portfolio |
+
+---
+
+## Disclaimer
+
+This is a university course project. Do not use this code, model, or methodology for live trading. The authors accept no liability for losses incurred from doing so.
