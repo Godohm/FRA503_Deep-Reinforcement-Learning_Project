@@ -1,0 +1,4 @@
+ddqn:
+  gamma: 0.95
+ppo:
+  n_epochs: 5

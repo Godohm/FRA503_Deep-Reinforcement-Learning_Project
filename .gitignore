@@ -28,7 +28,6 @@ Thumbs.db
 # Project: artifacts you do NOT want to commit
 data/processed/
 models/
-results/
 runs/                    # TensorBoard event logs
 *.parquet
 *.pkl
@@ -36,6 +35,39 @@ runs/                    # TensorBoard event logs
 *.zip
 *.tfevents*
 mlruns/
+*.db                     # Optuna SQLite study files (large, resumable from scratch)
+
+# Exclude most results except key M8 + HPO report artifacts
+results/
+# Allow M8 full-run summaries, metrics, and logs
+!results/
+!results/m8_summary.md
+!results/comparison_table.csv
+!results/ddqn/
+!results/ddqn/m8_full_ddqn_seed*/
+!results/ddqn/m8_full_ddqn_seed*/*.yaml
+!results/ddqn/m8_full_ddqn_seed*/*.json
+!results/ddqn/m8_full_ddqn_seed*/*.csv
+!results/a2c/
+!results/a2c/m8_full_a2c_seed*/
+!results/a2c/m8_full_a2c_seed*/*.yaml
+!results/a2c/m8_full_a2c_seed*/*.json
+!results/a2c/m8_full_a2c_seed*/*.csv
+!results/ppo/
+!results/ppo/m8_full_ppo_seed*/
+!results/ppo/m8_full_ppo_seed*/*.yaml
+!results/ppo/m8_full_ppo_seed*/*.json
+!results/ppo/m8_full_ppo_seed*/*.csv
+# Allow Optuna HPO report + plots (but not .db files)
+!results/optuna/
+!results/optuna/*.md
+!results/optuna/*.png
+!results/optuna/*.csv
+# Allow OAT HPO report
+!results/hpo/
+!results/hpo/*.md
+!results/hpo/*.csv
+!results/hpo/*.yaml
 
 # Keep the raw CSV under version control? It's 23MB — for an academic repo we keep it.
 # If you switch to git-lfs or external storage, add this line:

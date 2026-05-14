@@ -1,0 +1,4 @@
+algorithm,seed,run_id,total_return,total_return_pct,sharpe,sortino,max_drawdown,max_drawdown_pct,num_trades,win_rate,transaction_cost,exposure_time,final_equity,model_path,result_path
+baseline:flat,,flat,0.0,0.0,0.0,0.0,0.0,0.0,0,0.0,0.0,0.0,10000.0,,results\baselines\flat
+baseline:long_only,,long_only,-0.14940000000000092,-14.940000000000092,-4.0904623391651524,-4.733071641767701,-0.16501423382742653,-16.50142338274265,40,0.45,713.0,0.9988095238095238,8505.99999999999,,results\baselines\long_only
+baseline:short_only,,short_only,0.006800000000001092,0.6800000000001092,0.18684994596946777,0.2676657664996018,-0.11495335908790948,-11.495335908790947,40,0.45,713.0,0.9988095238095238,10068.000000000011,,results\baselines\short_only
