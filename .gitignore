@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project: artifacts you do NOT want to commit
+data/processed/
+models/
+results/
+runs/                    # TensorBoard event logs
+*.parquet
+*.pkl
+*.pt
+*.zip
+*.tfevents*
+mlruns/
+
+# Keep the raw CSV under version control? It's 23MB — for an academic repo we keep it.
+# If you switch to git-lfs or external storage, add this line:
+# data/raw/*.csv
+
+# Logs
+*.log
+
+# Claude Code project files
+.claude/

@@ -1,0 +1,31 @@
+# Custom Double DQN hyperparameters.
+#
+# The agent uses the env from configs/env.yaml. Everything network/RL related
+# lives here so env.yaml stays the single source of truth for env semantics.
+
+network:
+  hidden_sizes: [128, 128]
+
+dqn:
+  lr: 1.0e-3
+  gamma: 0.99
+  batch_size: 64
+  buffer_capacity: 100000
+  min_buffer_to_learn: 1000        # don't start gradient updates until buffer reaches this
+  target_update_freq: 1000         # hard sync target <- online every N learner updates
+  grad_clip: 10.0
+  eps_start: 1.0
+  eps_end: 0.05
+  eps_decay_steps: 50000           # over agent action-steps (calls to select_action)
+  learn_every: 1                   # gradient steps per env step (when buffer ready)
+  device: cpu
+
+training:
+  total_steps: 200000              # full-run target; --smoke overrides
+  eval_every_steps: 10000          # periodic deterministic eval on test split
+  log_every_steps: 1000            # CSV + TB cadence
+  save_dir_root: models/ddqn       # checkpoints go to <save_dir_root>/<run_id>/
+  results_dir_root: results/ddqn   # logs go to <results_dir_root>/<run_id>/
+  smoke_steps: 1000                # used by `scripts/train_dqn.py --smoke`
+
+seed: 42

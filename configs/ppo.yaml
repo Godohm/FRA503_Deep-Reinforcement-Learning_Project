@@ -1,0 +1,28 @@
+# PPO hyperparameters (via Stable-Baselines3).
+#
+# Hidden size matches DQN/A2C for fair comparison (128, 128).
+
+network:
+  hidden_sizes: [128, 128]
+
+ppo:
+  learning_rate: 3.0e-4
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.0
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  device: cpu
+
+training:
+  total_steps: 200000
+  eval_every_steps: 10000
+  save_dir_root: models/ppo
+  results_dir_root: results/ppo
+  smoke_steps: 1000
+
+seed: 42

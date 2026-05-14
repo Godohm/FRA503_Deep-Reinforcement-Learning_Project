@@ -1,0 +1,38 @@
+import MetaTrader5 as mt5
+import pandas as pd
+from datetime import datetime, timezone
+
+# เชื่อมต่อ MT5
+if not mt5.initialize():
+    print("❌ เชื่อมต่อ MT5 ไม่ได้:", mt5.last_error())
+    quit()
+
+print("✅ เชื่อมต่อ MT5 สำเร็จ")
+print("โบรก:", mt5.terminal_info().company)
+
+# ดึงข้อมูล M1 ย้อนหลัง 1 ปี
+rates = mt5.copy_rates_range(
+    "EURUSD",
+    mt5.TIMEFRAME_M1,
+    datetime(2024, 1, 1, tzinfo=timezone.utc),
+    datetime(2025, 1, 1, tzinfo=timezone.utc)
+)
+
+mt5.shutdown()
+
+# ตรวจสอบผล
+if rates is None or len(rates) == 0:
+    print("❌ ไม่ได้ข้อมูลเลย — โบรกอาจไม่มี history เก่า")
+else:
+    df = pd.DataFrame(rates)
+    df['time'] = pd.to_datetime(df['time'], unit='s')
+
+    print(f"\n📊 ได้ทั้งหมด: {len(df):,} แท่ง")
+    print(f"📅 เริ่มต้น : {df['time'].iloc[0]}")
+    print(f"📅 สิ้นสุด  : {df['time'].iloc[-1]}")
+    print(f"\nตัวอย่างข้อมูล:")
+    print(df.head())
+
+    # บันทึกเป็น CSV
+    df.to_csv("eurusd_m1_2024.csv", index=False)
+    print("\n💾 บันทึกเป็น eurusd_m1_2024.csv แล้ว")

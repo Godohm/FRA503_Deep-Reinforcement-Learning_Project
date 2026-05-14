@@ -1,0 +1,42 @@
+# HPO short-sweep grid (one-at-a-time OAT around a per-algo baseline).
+#
+# Each variation flips ONE parameter from the baseline while holding the rest
+# fixed. The metric delta is then directly attributable to that parameter,
+# which makes the report write-up readable.
+#
+# Note: this is a fast HPO pass intended to inform the M8 full run. It uses
+# a single seed and short training horizon. Treat results as "directional",
+# not "statistically validated".
+
+settings:
+  steps_per_config: 20000   # short — enough to differentiate but not converge
+  eval_every: 5000          # 4 eval snapshots per run (incl. final)
+  seed: 42                  # fixed seed: variance comes from hyperparams, not data ordering
+  run_prefix: hpo
+
+algos:
+  ddqn:
+    section: dqn            # which sub-section of dqn.yaml to mutate
+    variations:
+      - {name: baseline,         params: {}}
+      - {name: lr_low,           params: {lr: 3.0e-4}}
+      - {name: eps_decay_short,  params: {eps_decay_steps: 20000}}
+      - {name: target_sync_fast, params: {target_update_freq: 500}}
+      - {name: gamma_low,        params: {gamma: 0.95}}
+
+  a2c:
+    section: a2c
+    variations:
+      - {name: baseline,     params: {}}
+      - {name: n_steps_long, params: {n_steps: 20}}
+      - {name: ent_coef_on,  params: {ent_coef: 0.01}}
+      - {name: lr_low,       params: {learning_rate: 3.0e-4}}
+
+  ppo:
+    section: ppo
+    variations:
+      - {name: baseline,     params: {}}
+      - {name: n_steps_short, params: {n_steps: 512}}
+      - {name: n_epochs_low, params: {n_epochs: 5}}
+      - {name: clip_tight,   params: {clip_range: 0.1}}
+      - {name: lr_low,       params: {learning_rate: 1.0e-4}}
