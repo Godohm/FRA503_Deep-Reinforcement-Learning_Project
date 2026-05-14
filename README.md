@@ -53,7 +53,7 @@ FRA503_DRL/
 | Instrument | EURUSD CFD (5-digit broker, point_size = 1e-5) |
 | Bar interval | 1 minute |
 | Session window | 09:00–00:00 UTC+7 (force-close at midnight) |
-| Train / test split | Jan–Nov 2024 (train) · Dec 2024 (test) |
+| Train / val / test split | Jan–Dec 2025 (train) · Jan–Feb 2026 (val) · Mar–Apr 2026 (test) |
 | State space | 15-D: 5 log-returns, spread, MACD, Stoch %K, RSI, ATR, time-left, position, unrealised PnL, daily PnL, holding-time |
 | Action space | Discrete(3): short(−1), flat(0), long(+1) |
 | Reward | `net_pnl / initial_equity` (dimensionless) |
@@ -123,11 +123,24 @@ python scripts/analyze_optuna.py --tags ddqn a2c ppo ddqn_expdecay
 
 ---
 
-## Data
+## Data & Split
 
-`data/raw/eurusd_m1_2024.csv` — 372,673 rows of 1-min OHLCV bars (2024-01-02 → 2024-12-31) exported from MetaTrader 5 via the Python API (see `Test1` / `test.txt`). Timestamps are UTC; session masking converts to UTC+7 (Asia/Bangkok) for window filtering only.
+**Active dataset:** `data/raw/eurusd_m1_2025_2026.csv` — 492,694 rows of 1-min EURUSD bars (2025-01-02 → 2026-04-30), exported from MetaTrader 5 via `scripts/download_mt5.py`.
 
-See [reports/data_schema.md](reports/data_schema.md) for full schema and cost-unit derivation.
+```
+Jan 2025 ──────────── Dec 2025 │ Jan 2026 ─ Feb 2026 │ Mar 2026 ─ Apr 2026
+         TRAIN (12 mo)          │   VAL (2 mo)         │   TEST (2 mo)
+         257 sessions           │   40 sessions         │   44 sessions
+         learn weights          │   HP selection        │   final eval (never touched during training)
+```
+
+| Split | Period | Sessions | Rows |
+|---|---|---|---|
+| Train | Jan–Dec 2025 | 257 | 231,300 |
+| Val | Jan–Feb 2026 | 40 | 36,000 |
+| Test | Mar–Apr 2026 | 44 | 39,600 |
+
+Timestamps are UTC; session masking converts to UTC+7 (Asia/Bangkok) for 09:00–00:00 window filtering only. See [reports/data_schema.md](reports/data_schema.md) for full schema and cost-unit derivation.
 
 ---
 

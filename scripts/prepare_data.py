@@ -71,16 +71,20 @@ def main() -> None:
     split_result = split_chronological(processed, cfg)
 
     train_path = processed_dir / "train.parquet"
-    test_path = processed_dir / "test.parquet"
+    val_path   = processed_dir / "val.parquet"
+    test_path  = processed_dir / "test.parquet"
 
     # Persist session_day as ISO strings so parquet round-trips reliably across
     # pandas/pyarrow versions (avoids object-dtype date warnings).
-    train_to_save = split_result.train.copy()
-    test_to_save = split_result.test.copy()
-    train_to_save["session_day"] = train_to_save["session_day"].astype("string")
-    test_to_save["session_day"] = test_to_save["session_day"].astype("string")
-    train_to_save.to_parquet(train_path)
-    test_to_save.to_parquet(test_path)
+    def _save(df: "pd.DataFrame", path: "Path") -> None:
+        out = df.copy()
+        out["session_day"] = out["session_day"].astype("string")
+        out.to_parquet(path)
+
+    _save(split_result.train, train_path)
+    _save(split_result.test, test_path)
+    if not split_result.val.empty:
+        _save(split_result.val, val_path)
 
     metadata = {
         "config_path": str(Path(args.config).resolve()),
@@ -103,29 +107,23 @@ def main() -> None:
         "rows_dropped_post_fill": stats.rows_dropped_post_fill,
         "split": {
             "train_months_config": int(cfg["split"]["train_months"]),
-            "test_months_config": int(cfg["split"]["test_months"]),
+            "val_months_config":   int(cfg["split"].get("val_months", 0)),
+            "test_months_config":  int(cfg["split"]["test_months"]),
             "train_months_actual": split_result.train_months,
-            "test_months_actual": split_result.test_months,
+            "val_months_actual":   split_result.val_months,
+            "test_months_actual":  split_result.test_months,
             "train_rows": int(len(split_result.train)),
-            "test_rows": int(len(split_result.test)),
+            "val_rows":   int(len(split_result.val)),
+            "test_rows":  int(len(split_result.test)),
             "train_sessions": len(split_result.train_session_days),
-            "test_sessions": len(split_result.test_session_days),
-            "train_range_utc": [
-                str(split_result.train.index.min()),
-                str(split_result.train.index.max()),
-            ],
-            "test_range_utc": [
-                str(split_result.test.index.min()),
-                str(split_result.test.index.max()),
-            ],
-            "train_range_display_tz": [
-                str(split_result.train.index.tz_convert(display_tz).min()),
-                str(split_result.train.index.tz_convert(display_tz).max()),
-            ],
-            "test_range_display_tz": [
-                str(split_result.test.index.tz_convert(display_tz).min()),
-                str(split_result.test.index.tz_convert(display_tz).max()),
-            ],
+            "val_sessions":   len(split_result.val_session_days),
+            "test_sessions":  len(split_result.test_session_days),
+            "train_range_utc": [str(split_result.train.index.min()), str(split_result.train.index.max())],
+            "val_range_utc":   [str(split_result.val.index.min()),   str(split_result.val.index.max())]   if not split_result.val.empty else [],
+            "test_range_utc":  [str(split_result.test.index.min()),  str(split_result.test.index.max())],
+            "train_range_display_tz": [str(split_result.train.index.tz_convert(display_tz).min()), str(split_result.train.index.tz_convert(display_tz).max())],
+            "val_range_display_tz":   [str(split_result.val.index.tz_convert(display_tz).min()),   str(split_result.val.index.tz_convert(display_tz).max())]   if not split_result.val.empty else [],
+            "test_range_display_tz":  [str(split_result.test.index.tz_convert(display_tz).min()),  str(split_result.test.index.tz_convert(display_tz).max())],
         },
     }
     (processed_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, default=str))
@@ -159,6 +157,13 @@ def main() -> None:
     print(f"  Train range (UTC)     : {_format_range(split_result.train.index)}")
     print(f"  Train range (UTC+7)   : {_format_range(split_result.train.index.tz_convert(display_tz))}")
     print()
+    if split_result.val_months:
+        print(f"  Val months            : {split_result.val_months[0]} .. {split_result.val_months[-1]}")
+        print(f"  Val rows              : {len(split_result.val):,}")
+        print(f"  Val sessions          : {len(split_result.val_session_days)}")
+        print(f"  Val range (UTC)       : {_format_range(split_result.val.index)}")
+        print(f"  Val range (UTC+7)     : {_format_range(split_result.val.index.tz_convert(display_tz))}")
+        print()
     print(f"  Test months           : {split_result.test_months[0]} .. {split_result.test_months[-1]}")
     print(f"  Test rows             : {len(split_result.test):,}")
     print(f"  Test sessions         : {len(split_result.test_session_days)}")
@@ -166,6 +171,8 @@ def main() -> None:
     print(f"  Test range (UTC+7)    : {_format_range(split_result.test.index.tz_convert(display_tz))}")
     print()
     print(f"  Wrote: {train_path}")
+    if not split_result.val.empty:
+        print(f"  Wrote: {val_path}")
     print(f"  Wrote: {test_path}")
     print(f"  Wrote: {processed_dir / 'metadata.json'}")
     print("=" * 72)
