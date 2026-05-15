@@ -1,20 +1,22 @@
-# PPO hyperparameters (via Stable-Baselines3).
+# PPO — best hyperparameters from Optuna HPO.
 #
-# Hidden size matches DQN/A2C for fair comparison (128, 128).
+# 50 trials × 50k steps on 2025 val split.
+# Best Sharpe on validation: -0.483 at trial #30.
+# See results/optuna/optuna_report.md for the full search analysis.
 
 network:
   hidden_sizes: [128, 128]
 
 ppo:
-  learning_rate: 3.0e-4
-  n_steps: 2048
-  batch_size: 64
-  n_epochs: 10
-  gamma: 0.99
-  gae_lambda: 0.95
-  clip_range: 0.2
-  ent_coef: 0.0
-  vf_coef: 0.5
+  learning_rate: 1.6599e-5         # HPO best (log scale)
+  n_steps: 512                     # HPO best
+  batch_size: 32                   # HPO best
+  n_epochs: 16                     # HPO best
+  gamma: 0.9706                    # HPO best
+  gae_lambda: 0.9777               # HPO best
+  clip_range: 0.1365               # HPO best
+  ent_coef: 4.4042e-3              # HPO best
+  vf_coef: 0.7517                  # HPO best
   max_grad_norm: 0.5
   device: cpu
 

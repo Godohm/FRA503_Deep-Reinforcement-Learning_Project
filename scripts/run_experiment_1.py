@@ -54,7 +54,16 @@ from src.features.normalization import PriceFeatureScaler  # noqa: E402
 from src.features.state_builder import compute_price_features  # noqa: E402
 from src.utils.config import load_config  # noqa: E402
 
-ALGO_CHOICES = ("ddqn", "a2c", "ppo")
+ALGO_CHOICES = ("ddqn", "ddqn_expdecay", "a2c", "ppo")
+
+# Map algo key to (trainer-import, config-yaml). `ddqn_expdecay` reuses the
+# DDQN trainer but loads dqn_expdecay.yaml (which sets eps_decay_type=exponential).
+ALGO_TO_CFG = {
+    "ddqn":           "dqn.yaml",
+    "ddqn_expdecay":  "dqn_expdecay.yaml",
+    "a2c":            "a2c.yaml",
+    "ppo":            "ppo.yaml",
+}
 
 
 # --------------------------------------------------------------------------- planning
@@ -64,10 +73,16 @@ def _run_id(prefix: str, algo: str, seed: int, steps: int) -> str:
     return f"{prefix}_{algo}_seed{seed}_steps{steps}"
 
 
+def _algo_save_root(algo: str) -> str:
+    """Where to save checkpoints/results. DDQN variants share models/ddqn + results/ddqn."""
+    return "ddqn" if algo.startswith("ddqn") else algo
+
+
 def _planned_runs(algos: list[str], seeds: list[int], steps: int,
                   run_prefix: str) -> list[dict[str, Any]]:
     plan: list[dict[str, Any]] = []
     for algo in algos:
+        save_root = _algo_save_root(algo)
         for seed in seeds:
             rid = _run_id(run_prefix, algo, seed, steps)
             plan.append({
@@ -75,8 +90,8 @@ def _planned_runs(algos: list[str], seeds: list[int], steps: int,
                 "seed": int(seed),
                 "steps": int(steps),
                 "run_id": rid,
-                "model_dir": Path("models") / algo / rid,
-                "result_dir": Path("results") / algo / rid,
+                "model_dir": Path("models") / save_root / rid,
+                "result_dir": Path("results") / save_root / rid,
             })
     return plan
 
@@ -113,7 +128,7 @@ def _build_test_env(env_cfg: dict[str, Any], scaler_path: Path) -> EURUSDIntrada
 
 def _greedy_policy_for_run(algo: str, model_dir: Path):
     """Reload the saved 'best' model for ``algo`` and return ``policy(obs)->int``."""
-    if algo == "ddqn":
+    if algo in ("ddqn", "ddqn_expdecay"):
         import torch  # local import
         from src.agents.double_dqn import DDQNConfig, DoubleDQNAgent
 
@@ -172,19 +187,17 @@ def _train_one(run: dict[str, Any], config_dir: Path) -> dict[str, Any]:
     """Dispatch to the right trainer based on ``run['algo']``."""
     algo = run["algo"]
     env_cfg = load_config(config_dir / "env.yaml")
-    if algo == "ddqn":
+    algo_cfg = load_config(config_dir / ALGO_TO_CFG[algo])
+    if algo in ("ddqn", "ddqn_expdecay"):
         from src.agents.train_dqn import train_dqn
-        algo_cfg = load_config(config_dir / "dqn.yaml")
         return train_dqn(env_cfg, algo_cfg, total_steps=run["steps"],
                          run_id=run["run_id"], seed=run["seed"])
     if algo == "a2c":
         from src.agents.train_a2c import train_a2c
-        algo_cfg = load_config(config_dir / "a2c.yaml")
         return train_a2c(env_cfg, algo_cfg, total_steps=run["steps"],
                          run_id=run["run_id"], seed=run["seed"])
     if algo == "ppo":
         from src.agents.train_ppo import train_ppo
-        algo_cfg = load_config(config_dir / "ppo.yaml")
         return train_ppo(env_cfg, algo_cfg, total_steps=run["steps"],
                          run_id=run["run_id"], seed=run["seed"])
     raise ValueError(f"Unknown algo: {algo!r}")
@@ -227,9 +240,8 @@ def main() -> int:
         return 0
 
     # Sanity-check that required config files exist before any heavy work.
-    needed = {"ddqn": "dqn.yaml", "a2c": "a2c.yaml", "ppo": "ppo.yaml"}
     for algo in args.algos:
-        for fname in ("env.yaml", needed[algo]):
+        for fname in ("env.yaml", ALGO_TO_CFG[algo]):
             p = config_dir / fname
             if not p.is_file():
                 print(f"[fatal] missing config: {p}")

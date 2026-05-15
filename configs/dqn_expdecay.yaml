@@ -1,0 +1,35 @@
+# Custom Double DQN — EXPONENTIAL ε-decay variant.
+#
+# Best hyperparameters from Optuna HPO (50 trials × 50k steps, 2025 val split,
+# --ddqn-decay-type exponential).
+# Best Sharpe on validation: 0.000 at trial #19 (linear decay outperforms;
+# this variant retained for completeness/ablation).
+# See results/optuna/optuna_report.md for the full search analysis.
+
+network:
+  hidden_sizes: [128, 128]
+
+dqn:
+  lr: 3.6236e-3                    # HPO best (exp variant)
+  gamma: 0.9722                    # HPO best
+  batch_size: 32                   # HPO best
+  buffer_capacity: 100000
+  min_buffer_to_learn: 2500        # HPO best
+  target_update_freq: 4900         # HPO best
+  grad_clip: 10.0
+  eps_start: 1.0
+  eps_end: 0.05
+  eps_decay_steps: 80000           # HPO best
+  eps_decay_type: exponential      # ε(t) = ε_start × (ε_end/ε_start)^(t/T)
+  learn_every: 1
+  device: cpu
+
+training:
+  total_steps: 200000
+  eval_every_steps: 10000
+  log_every_steps: 1000
+  save_dir_root: models/ddqn       # share dir with linear so M8 runs sit side-by-side
+  results_dir_root: results/ddqn
+  smoke_steps: 1000
+
+seed: 42

@@ -1,31 +1,33 @@
-# Custom Double DQN hyperparameters.
+# Custom Double DQN — LINEAR ε-decay variant.
 #
-# The agent uses the env from configs/env.yaml. Everything network/RL related
-# lives here so env.yaml stays the single source of truth for env semantics.
+# Best hyperparameters from Optuna HPO (50 trials × 50k steps, 2025 val split).
+# Best Sharpe on validation: +2.542 at trial #52.
+# See results/optuna/optuna_report.md for the full search analysis.
 
 network:
   hidden_sizes: [128, 128]
 
 dqn:
-  lr: 1.0e-3
-  gamma: 0.99
-  batch_size: 64
+  lr: 4.7485e-3                    # HPO best (range 1e-5..5e-3)
+  gamma: 0.9407                    # HPO best
+  batch_size: 64                   # HPO best
   buffer_capacity: 100000
-  min_buffer_to_learn: 1000        # don't start gradient updates until buffer reaches this
-  target_update_freq: 1000         # hard sync target <- online every N learner updates
+  min_buffer_to_learn: 2000        # HPO best
+  target_update_freq: 2000         # HPO best (hard sync, learner steps)
   grad_clip: 10.0
   eps_start: 1.0
   eps_end: 0.05
-  eps_decay_steps: 50000           # over agent action-steps (calls to select_action)
-  learn_every: 1                   # gradient steps per env step (when buffer ready)
+  eps_decay_steps: 70000           # HPO best
+  eps_decay_type: linear           # linear or exponential
+  learn_every: 1
   device: cpu
 
 training:
-  total_steps: 200000              # full-run target; --smoke overrides
-  eval_every_steps: 10000          # periodic deterministic eval on test split
-  log_every_steps: 1000            # CSV + TB cadence
-  save_dir_root: models/ddqn       # checkpoints go to <save_dir_root>/<run_id>/
-  results_dir_root: results/ddqn   # logs go to <results_dir_root>/<run_id>/
-  smoke_steps: 1000                # used by `scripts/train_dqn.py --smoke`
+  total_steps: 200000              # full M8 run
+  eval_every_steps: 10000          # periodic deterministic eval on val split
+  log_every_steps: 1000
+  save_dir_root: models/ddqn
+  results_dir_root: results/ddqn
+  smoke_steps: 1000
 
 seed: 42

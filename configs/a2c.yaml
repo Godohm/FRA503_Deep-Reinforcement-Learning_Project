@@ -1,17 +1,19 @@
-# A2C hyperparameters (via Stable-Baselines3).
+# A2C — best hyperparameters from Optuna HPO.
 #
-# Hidden size matches DQN/PPO for fair comparison (128, 128).
+# 50 trials × 50k steps on 2025 val split.
+# Best Sharpe on validation: -2.188 at trial #27.
+# See results/optuna/optuna_report.md for the full search analysis.
 
 network:
   hidden_sizes: [128, 128]
 
 a2c:
-  learning_rate: 7.0e-4
-  n_steps: 5                       # n-step actor-critic rollout per update
-  gamma: 0.99
-  gae_lambda: 1.0
-  ent_coef: 0.0
-  vf_coef: 0.5
+  learning_rate: 1.4937e-4         # HPO best (log scale)
+  n_steps: 30                      # HPO best (n-step rollout)
+  gamma: 0.9605                    # HPO best
+  gae_lambda: 0.9159               # HPO best
+  ent_coef: 1.3823e-4              # HPO best (log scale)
+  vf_coef: 0.8213                  # HPO best
   max_grad_norm: 0.5
   device: cpu
 
