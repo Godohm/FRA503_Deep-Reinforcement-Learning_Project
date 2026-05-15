@@ -1,0 +1,30 @@
+algo: a2c
+run_id: m8_2025_a2c_seed42_steps200000
+save_dir: models\a2c\m8_2025_a2c_seed42_steps200000
+results_dir: results\a2c\m8_2025_a2c_seed42_steps200000
+total_steps: 200000
+final_metrics:
+  total_return: -0.1275999999999918
+  final_equity: 8724.000000000082
+  mean_daily_return: -0.003189999999999795
+  sharpe_ratio: -1.7274693881664187
+  sortino_ratio: -2.0197552989409426
+  max_drawdown_pct: -0.27806295399515313
+  n_trades: 80
+  win_rate: 0.475
+  avg_pnl_per_trade: -31.89999999999795
+  total_transaction_cost: 1580.0
+  exposure_time: 0.9988095238095238
+best_metrics:
+  total_return: -0.1275999999999918
+  final_equity: 8724.000000000082
+  mean_daily_return: -0.003189999999999795
+  sharpe_ratio: -1.7274693881664187
+  sortino_ratio: -2.0197552989409426
+  max_drawdown_pct: -0.27806295399515313
+  n_trades: 80
+  win_rate: 0.475
+  avg_pnl_per_trade: -31.89999999999795
+  total_transaction_cost: 1580.0
+  exposure_time: 0.9988095238095238
+wall_time_s: 388.7999007701874

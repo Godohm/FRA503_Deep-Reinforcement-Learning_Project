@@ -1,0 +1,13 @@
+{
+  "total_return": -0.02569999999999909,
+  "final_equity": 9743.00000000001,
+  "mean_daily_return": -0.0005840909090908896,
+  "sharpe_ratio": -2.420839754357787,
+  "sortino_ratio": -2.3931721056523974,
+  "max_drawdown_pct": -0.02569999999999909,
+  "n_trades": 2,
+  "win_rate": 0.0,
+  "avg_pnl_per_trade": -256.9999999999914,
+  "total_transaction_cost": 38.0,
+  "exposure_time": 2.7056277056277056e-05
+}
