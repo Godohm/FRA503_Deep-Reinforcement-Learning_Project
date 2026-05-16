@@ -1,0 +1,19 @@
+run_id: m8_2025_hs_ddqn_expdecay_seed42_steps200000
+save_dir: models\ddqn\m8_2025_hs_ddqn_expdecay_seed42_steps200000
+results_dir: results\ddqn\m8_2025_hs_ddqn_expdecay_seed42_steps200000
+total_steps: 200000
+episodes: 238
+best_score: 1.9138986595841065
+best_metrics:
+  total_return: 0.018199999999998728
+  final_equity: 10181.999999999987
+  mean_daily_return: 0.0004549999999999681
+  sharpe_ratio: 1.9138986413841066
+  sortino_ratio: 4.309588438561675
+  max_drawdown_pct: -0.010600000000000909
+  n_trades: 16
+  win_rate: 0.5
+  avg_pnl_per_trade: 22.749999999998415
+  total_transaction_cost: 155.0
+  exposure_time: 0.00035714285714285714
+wall_time_s: 497.890939950943

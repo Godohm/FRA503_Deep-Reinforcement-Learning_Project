@@ -1,0 +1,30 @@
+algo: ppo
+run_id: m8_2025_hs_ppo_seed123_steps200000
+save_dir: models\ppo\m8_2025_hs_ppo_seed123_steps200000
+results_dir: results\ppo\m8_2025_hs_ppo_seed123_steps200000
+total_steps: 200000
+final_metrics:
+  total_return: -0.296300000000021
+  final_equity: 7036.99999999979
+  mean_daily_return: -0.007407500000000522
+  sharpe_ratio: -3.208805193196307
+  sortino_ratio: -3.933135924921479
+  max_drawdown_pct: -0.36986792030447124
+  n_trades: 91
+  win_rate: 0.3191489361702128
+  avg_pnl_per_trade: -63.04255319149382
+  total_transaction_cost: 928.0
+  exposure_time: 0.9986904761904762
+best_metrics:
+  total_return: -0.014800000000012734
+  final_equity: 9851.999999999873
+  mean_daily_return: -0.0003700000000003142
+  sharpe_ratio: -0.18899635355501315
+  sortino_ratio: -0.2943602844350776
+  max_drawdown_pct: -0.19169709152070136
+  n_trades: 85
+  win_rate: 0.4
+  avg_pnl_per_trade: -3.288888888891684
+  total_transaction_cost: 888.0
+  exposure_time: 0.9988095238095238
+wall_time_s: 664.71191573143

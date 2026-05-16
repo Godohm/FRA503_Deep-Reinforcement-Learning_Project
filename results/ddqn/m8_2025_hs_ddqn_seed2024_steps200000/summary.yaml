@@ -1,0 +1,19 @@
+run_id: m8_2025_hs_ddqn_seed2024_steps200000
+save_dir: models\ddqn\m8_2025_hs_ddqn_seed2024_steps200000
+results_dir: results\ddqn\m8_2025_hs_ddqn_seed2024_steps200000
+total_steps: 200000
+episodes: 238
+best_score: 0.0
+best_metrics:
+  total_return: 0.0
+  final_equity: 10000.0
+  mean_daily_return: 0.0
+  sharpe_ratio: 0.0
+  sortino_ratio: 0.0
+  max_drawdown_pct: 0.0
+  n_trades: 0
+  win_rate: 0.0
+  avg_pnl_per_trade: 0.0
+  total_transaction_cost: 0.0
+  exposure_time: 0.0
+wall_time_s: 522.6442611217499

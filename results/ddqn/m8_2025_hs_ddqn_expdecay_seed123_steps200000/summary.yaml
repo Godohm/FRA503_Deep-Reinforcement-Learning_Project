@@ -1,0 +1,19 @@
+run_id: m8_2025_hs_ddqn_expdecay_seed123_steps200000
+save_dir: models\ddqn\m8_2025_hs_ddqn_expdecay_seed123_steps200000
+results_dir: results\ddqn\m8_2025_hs_ddqn_expdecay_seed123_steps200000
+total_steps: 200000
+episodes: 238
+best_score: 2.54195564130897
+best_metrics:
+  total_return: 0.004099999999999273
+  final_equity: 10040.999999999993
+  mean_daily_return: 0.00010249999999998349
+  sharpe_ratio: 2.54195563720897
+  sortino_ratio: 0.0
+  max_drawdown_pct: 0.0
+  n_trades: 2
+  win_rate: 1.0
+  avg_pnl_per_trade: 40.99999999999339
+  total_transaction_cost: 19.0
+  exposure_time: 2.9761904761904762e-05
+wall_time_s: 496.8786623477936

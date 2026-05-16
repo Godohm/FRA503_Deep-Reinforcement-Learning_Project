@@ -1,0 +1,19 @@
+run_id: m8_2025_hs_ddqn_seed42_steps200000
+save_dir: models\ddqn\m8_2025_hs_ddqn_seed42_steps200000
+results_dir: results\ddqn\m8_2025_hs_ddqn_seed42_steps200000
+total_steps: 200000
+episodes: 238
+best_score: -0.4698682712042483
+best_metrics:
+  total_return: -0.03529999999999218
+  final_equity: 9647.000000000078
+  mean_daily_return: -0.000882499999999803
+  sharpe_ratio: -0.4698682359042483
+  sortino_ratio: -0.5799445038589349
+  max_drawdown_pct: -0.23624982080565318
+  n_trades: 82
+  win_rate: 0.5121951219512195
+  avg_pnl_per_trade: -8.609756097559057
+  total_transaction_cost: 809.0
+  exposure_time: 0.9987797619047619
+wall_time_s: 546.4112586975098
